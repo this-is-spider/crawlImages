@@ -6,6 +6,25 @@
 # See: https://doc.scrapy.org/en/latest/topics/item-pipeline.html
 
 
+from scrapy import Request
+from scrapy.exceptions import DropItem
+from scrapy.pipelines.images import ImagesPipeline
+
 class CrawlimagesPipeline(object):
     def process_item(self, item, spider):
         return item
+
+
+class ImagesPipeline(ImagesPipeline):
+    def get_media_requests(self, item, info):
+        yield Request(item['path'])
+
+    def item_completed(self, results, item, info):
+        image_paths = [x['path'] for ok, x in results if ok]
+        if not image_paths:
+            raise DropItem('Image Downloaded Failed')
+        return item
+    def file_path(self, request, response=None, info=None):
+        url = request.url
+        file_name = url.split('/')[-1]
+        return file_name
